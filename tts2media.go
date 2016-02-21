@@ -39,7 +39,6 @@ var (
 	picottsExe = "pico2wave"
 	ffmpegExe  = "ffmpeg"
 	ffprobeExe = "ffprobe"
-	fileExe    = "file"
 )
 
 var quality = map[string][]string{
@@ -80,9 +79,9 @@ type Media struct {
 
 // PrepareEnv prepares the environment to run the different ffmpeg and speech engines
 func PrepareAndCheckEnv(dataDir string) {
-	exes := []string{espeakExe, picottsExe, ffmpegExe, ffprobeExe, fileExe}
+	exes := []string{espeakExe, picottsExe, ffmpegExe, ffprobeExe}
 	for _, exe := range exes {
-		_, err := exec.LookPath(fileExe)
+		_, err := exec.LookPath(exe)
 		if err != nil {
 			log.Fatal("the '" + exe + "' binary executable was not found")
 		}
