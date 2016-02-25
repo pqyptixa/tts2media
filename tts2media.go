@@ -1,13 +1,18 @@
 // Package tts2media runs TTS engines, converts their output to mp3 and ogg (as audio files)
 // and makes videos from images or other videos
 //
-// Note: files created by all functions and methods in this package are stored under the directory
-// passed to PrepareAndCheckEnv(), and read from a subdirectory, named "tmp", that must be
+// Notes:
+//
+// - files created by all functions and methods in this package are stored under the directory
+// passed to SetDataDir(), and read from a subdirectory, named "tmp", that must be
 // created under the same directory. Other than RemoveWAV, functions don't remove any files.
 //
-// Note: for the functions of this package that create videos, and unless specified otherwise,
+// - if SetDataDir() isn't called, the media files will be saved in the current working directory
+//
+// - for the functions of this package that create videos, and unless specified otherwise,
 // the filenames passed should be the same as the input audio files, and should not
 // contain extensions.
+
 package tts2media
 
 import (
@@ -41,21 +46,15 @@ var (
 	ffprobeExe = "ffprobe"
 )
 
-var quality = map[string][]string{
-	"bad":    []string{"16k", "8000"},
-	"good":   []string{"32k", "22050"},
-	"normal": []string{"24k", "16000"},
-}
-
 // EspeakSpeech: values needed to create wav files by calling the Espeak speech engine
 type EspeakSpeech struct {
-	Text     string //`schema:"msg"`
-	Lang     string //`schema:"lang"`
-	Speed    string //`schema:"speed"`
-	Gender   string //`schema:"gender"`
-	Altvoice string //`schema:"altvoice"`
-	Quality  string //`schema:"quality"`
-	Pitch    string //`schema:"pitch"`
+	Text     string
+	Lang     string
+	Speed    string
+	Gender   string
+	Altvoice string
+	Quality  string
+	Pitch    string
 }
 
 // FestivalSpeech: values needed to create wav files by calling the Festival speech engine
@@ -77,8 +76,8 @@ type Media struct {
 	SampleRate string
 }
 
-// PrepareEnv prepares the environment to run the different ffmpeg and speech engines
-func PrepareAndCheckEnv(dataDir string) {
+// init checks that ffmpeg and the text-to-speech engines are installed in the system
+func init() {
 	exes := []string{espeakExe, picottsExe, ffmpegExe, ffprobeExe}
 	for _, exe := range exes {
 		_, err := exec.LookPath(exe)
@@ -86,7 +85,10 @@ func PrepareAndCheckEnv(dataDir string) {
 			log.Fatal("the '" + exe + "' binary executable was not found")
 		}
 	}
+}
 
+// SetDataDir sets the directories where the media files are saved
+func SetDataDir(dataDir string) {
 	dataPath = dataDir
 	tempPath = dataPath + "tmp/"
 }
@@ -97,25 +99,33 @@ type Param struct {
 }
 
 var (
+	quality = map[string][]string{
+		"bad":    []string{"16k", "8000"},
+		"good":   []string{"32k", "22050"},
+		"normal": []string{"24k", "16000"},
+	}
+
 	arrParams = []Param{
 		{"speed", []int{80, 390}},
 		{"altvoice", []int{0, 5}},
 		{"pitch", []int{0, 99}},
 	}
-	langs = []string{"af", "bs", "ca", "cs", "cy", "de", "en", "en-sc", "en-uk",
-		"en-uk-north", "en-uk-rp", "en-uk-wmids", "en-us", "en-wi", "eo", "es", "es-la",
-		"fi", "fr", "fr-be", "grc", "hr", "hu", "id", "is", "it", "jbo", "ku", "la", "lv",
-		"mk", "nl", "no", "pl", "pt-pt", "pt", "ro", "ru", "sk", "sq", "sr", "sv", "sw",
-		"tr", "vi", "zh", "zh-yue", "hi", "el", "ta"}
+
+	langs = []string{
+		"af", "bs", "ca", "cs", "cy", "de", "en", "en-sc", "en-uk", "en-uk-north",
+		"en-uk-rp", "en-uk-wmids", "en-us", "en-wi", "eo", "es", "es-la", "fi", "fr",
+		"fr-be", "grc", "hr", "hu", "id", "is", "it", "jbo", "ku", "la", "lv", "mk", "nl",
+		"no", "pl", "pt-pt", "pt", "ro", "ru", "sk", "sq", "sr", "sv", "sw", "tr", "vi",
+		"zh", "zh-yue", "hi", "el", "ta",
+	}
+
 	genders = []string{"m", "f"}
 )
 
 // NewEspeakSpeech creates (after sanitizing inputs) a WAV file with a random filename
 // If the operation succeeds, it returns the filename (without path or extension)
 // and a nil error. Otherwise, returns an empty string and an error
-func (s *EspeakSpeech) NewEspeakSpeech(m *Media) error {
-
-	var err error
+func (s *EspeakSpeech) NewEspeakSpeech() (*Media, error) {
 
 	intParams := map[string]Param{
 		s.Speed:    arrParams[0], // speed
@@ -126,23 +136,24 @@ func (s *EspeakSpeech) NewEspeakSpeech(m *Media) error {
 	for input, params := range intParams {
 		if param, err := strconv.Atoi(input); err != nil || param < params.Limits[0] ||
 			param > params.Limits[1] {
-			return errors.New("error converting " + params.Name)
+			return nil, errors.New("error converting " + params.Name)
 		}
 	}
 
 	if !stringInSlice(&(s.Gender), genders) {
-		return errors.New("error converting gender")
+		return nil, errors.New("error converting gender")
 	}
 
 	if !stringInSlice(&(s.Lang), langs) {
-		return errors.New("error converting lang")
+		return nil, errors.New("error converting lang")
 	}
 
+	var bitRate, sampleRate string
 	if val, ok := quality[s.Quality]; ok {
-		m.BitRate = val[0]
-		m.SampleRate = val[1]
+		bitRate = val[0]
+		sampleRate = val[1]
 	} else {
-		return errors.New("wrong quality")
+		return nil, errors.New("wrong quality")
 	}
 
 	randName := RandString(FilenameLen)
@@ -156,49 +167,60 @@ func (s *EspeakSpeech) NewEspeakSpeech(m *Media) error {
 		s.Lang + variant, "-s", s.Speed, "-p", s.Pitch}
 	commandArgs = append(commandArgs, s.Text)
 
-	if err = execCmd(espeakExe, commandArgs); err != nil {
-		return errors.New("error executing espeak, " + err.Error())
+	if err := execCmd(espeakExe, commandArgs); err != nil {
+		return nil, errors.New("error executing espeak, " + err.Error())
 	}
 
-	m.Filename = randName
+	media := &Media{
+		BitRate:    bitRate,
+		SampleRate: sampleRate,
+		Filename:   randName,
+	}
 	wavGenerated = true
-	return nil
+	return media, nil
 }
 
 // NewPicoTTSSpeech creates (after sanitizing inputs) a WAV file with a random filename.
 // If the operation succeeds, it returns the filename (without path or extension) and
 // a nil error. Otherwise, returns an empty string and an error
-func (s *PicoTTSSpeech) NewPicoTTSSpeech(m *Media) error {
-	var err error
+func (s *PicoTTSSpeech) NewPicoTTSSpeech() (*Media, error) {
+
 	langs := []string{"de-DE", "en-GB", "en-US", "es-ES", "fr-FR", "it-IT"}
 
 	if !stringInSlice(&(s.Lang), langs) {
-		return errors.New("error converting pitch")
+		return nil, errors.New("error converting pitch")
 	}
 
+	var bitRate, sampleRate string
 	if val, ok := quality[s.Quality]; ok {
-		m.BitRate = val[0]
-		m.SampleRate = val[1]
+		bitRate = val[0]
+		sampleRate = val[1]
 	} else {
-		return errors.New("wrong quality")
+		return nil, errors.New("wrong quality")
 	}
 
 	randName := RandString(FilenameLen)
 	commandArgs := []string{"-w", dataPath + randName + ".wav", "-l", s.Lang, s.Text}
-	if err = execCmd(picottsExe, commandArgs); err != nil {
-		return errors.New("error executing pico2wave, " + err.Error())
+
+	if err := execCmd(picottsExe, commandArgs); err != nil {
+		return nil, errors.New("error executing pico2wave, " + err.Error())
 	}
-	m.Filename = randName
+
+	media := &Media{
+		BitRate:    bitRate,
+		SampleRate: sampleRate,
+		Filename:   randName,
+	}
 	wavGenerated = true
-	return nil
+	return media, nil
 }
 
 // NewFestivalSpeech creates a WAV file with a random filename.
 // If the operation succeeds, it returns the filename (without path or extension)
 // and a nil error. Otherwise, returns an empty string and an error
-func (s *FestivalSpeech) NewFestivalSpeech() (string, error) {
+func (s *FestivalSpeech) NewFestivalSpeech() (*Media, error) {
 	// TODO
-	return "", nil
+	return nil, errors.New("not implemented")
 }
 
 // RemoveWAV deletes the WAV file generated by the speech engines

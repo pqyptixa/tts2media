@@ -13,7 +13,7 @@ var (
 	videoFilename string
 )
 
-// TestPreload calls PrepareAndCheckEnv to set the output directories
+// TestPreload calls SetDataDir to set the output directories
 func TestPreload(t *testing.T) {
 	webmB64 := "GkXfo0AgQoaBAUL3gQFC8oEEQvOBCEKCQAR3ZWJtQoeBAkKFgQIYU4BnQI0VSalmQCgq17FAAw9CQE2AQAZ3aGFtbXlXQUAGd2hhbW15RIlACECPQAAAAAAAFlSua0AxrkAu14EBY8WBAZyBACK1nEADdW5khkAFVl9WUDglhohAA1ZQOIOBAeBABrCBCLqBCB9DtnVAIueBAKNAHIEAAIAwAQCdASoIAAgAAUAmJaQAA3AA/vz0AAA="
 	mp4B64 := "AAAAHGZ0eXBpc29tAAACAGlzb21pc28ybXA0MQAAAAhmcmVlAAAAGm1kYXQAAAGzABAHAAABthBgUYI9t+8AAAMNbW9vdgAAAGxtdmhkAAAAAMXMvvrFzL76AAAD6AAAACoAAQAAAQAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAABhpb2RzAAAAABCAgIAHAE/////+/wAAAiF0cmFrAAAAXHRraGQAAAAPxcy++sXMvvoAAAABAAAAAAAAACoAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAgAAAAIAAAAAAG9bWRpYQAAACBtZGhkAAAAAMXMvvrFzL76AAAAGAAAAAEVxwAAAAAALWhkbHIAAAAAAAAAAHZpZGUAAAAAAAAAAAAAAABWaWRlb0hhbmRsZXIAAAABaG1pbmYAAAAUdm1oZAAAAAEAAAAAAAAAAAAAACRkaW5mAAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAAAQAAAShzdGJsAAAAxHN0c2QAAAAAAAAAAQAAALRtcDR2AAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAgACABIAAAASAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGP//AAAAXmVzZHMAAAAAA4CAgE0AAQAEgICAPyARAAAAAAMNQAAAAAAFgICALQAAAbABAAABtYkTAAABAAAAASAAxI2IAMUARAEUQwAAAbJMYXZjNTMuMzUuMAaAgIABAgAAABhzdHRzAAAAAAAAAAEAAAABAAAAAQAAABxzdHNjAAAAAAAAAAEAAAABAAAAAQAAAAEAAAAUc3RzegAAAAAAAAASAAAAAQAAABRzdGNvAAAAAAAAAAEAAAAsAAAAYHVkdGEAAABYbWV0YQAAAAAAAAAhaGRscgAAAAAAAAAAbWRpcmFwcGwAAAAAAAAAAAAAAAAraWxzdAAAACOpdG9vAAAAG2RhdGEAAAABAAAAAExhdmY1My4yMS4x"
@@ -27,7 +27,7 @@ func TestPreload(t *testing.T) {
 	if err = os.Mkdir(saveDir+"tmp", 0700); err != nil {
 		t.Fatal("Error creating " + saveDir + "tmp")
 	}
-	PrepareAndCheckEnv(saveDir)
+	SetDataDir(saveDir)
 
 	// writes file to tempPath name, as payload.ext
 	writeMedia := func(m string, ext string) {
@@ -50,8 +50,8 @@ func TestPreload(t *testing.T) {
 func TestEspeak(t *testing.T) {
 	espwav := &EspeakSpeech{"This is some sample text for testing text to speech engines.",
 		"en", "135", "m", "0", "good", "50"}
-	media := new(Media)
-	err := espwav.NewEspeakSpeech(media)
+
+	media, err := espwav.NewEspeakSpeech()
 	if err != nil {
 		t.Fatal("NewEspeakSpeech returned error:", err)
 	}
@@ -79,9 +79,7 @@ func TestEspeak(t *testing.T) {
 func TestEspeakToAudio(t *testing.T) {
 	espwav := &EspeakSpeech{"This is some sample text for testing text to speech engines.",
 		"en", "135", "m", "0", "normal", "50"}
-	media := new(Media)
-
-	err := espwav.NewEspeakSpeech(media)
+	media, err := espwav.NewEspeakSpeech()
 	if err != nil {
 		t.Fatal("NewEspeakSpeech returned error:", err)
 	}
@@ -137,8 +135,7 @@ func TestEspeakToAudio(t *testing.T) {
 func TestPicoTTS(t *testing.T) {
 	picowav := &PicoTTSSpeech{"This is some sample text for testing text to speech engines.",
 		"en-US", "normal"}
-	media := new(Media)
-	err := picowav.NewPicoTTSSpeech(media)
+	media, err := picowav.NewPicoTTSSpeech()
 	if err != nil {
 		t.Fatal("NewPicoTTSSpeech returned error:", err)
 	}
@@ -171,9 +168,8 @@ func TestPicoTTSToAudio(t *testing.T) {
 		"for testing text to speech engines. This is some sample text for testing text to" +
 		" speech engines. This is some sample text for testing text to speech engines. " +
 		"This is some sample text for testing text to speech engines.", "en-US", "bad"}
-	media := new(Media)
 
-	err := picowav.NewPicoTTSSpeech(media)
+	media, err := picowav.NewPicoTTSSpeech()
 	if err != nil {
 		t.Fatal("NewPicoTTSSpeech returned error:", err)
 	}
