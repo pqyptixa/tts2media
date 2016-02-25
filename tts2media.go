@@ -70,21 +70,21 @@ var (
 
 // EspeakSpeech: values needed to create wav files by calling the Espeak speech engine
 //
-// language: language of the speaker, aka "voice name" in espeak; "af", "bs", "ca", "cs", "cy",
-// "de", "en", "en-sc", "en-uk", "en-uk-north", "en-uk-rp", "en-uk-wmids", "en-us", "en-wi", "eo",
-// "es", "es-la", "fi", "fr", "fr-be", "grc", "hr", "hu", "id", "is", "it", "jbo", "ku", "la", "lv",
-// "mk", "nl", "no", "pl", "pt-pt", "pt", "ro", "ru", "sk", "sq", "sr", "sv", "sw", "tr", "vi",
-// "zh", "zh-yue", "hi", "el", "ta"
+// Language: language of the speaker, aka "voice name" in espeak; values: "af", "bs", "ca", "cs",
+// "cy", "de", "en", "en-sc", "en-uk", "en-uk-north", "en-uk-rp", "en-uk-wmids", "en-us", "en-wi",
+// "eo", "es", "es-la", "fi", "fr", "fr-be", "grc", "hr", "hu", "id", "is", "it", "jbo", "ku",
+// "la", "lv", "mk", "nl", "no", "pl", "pt-pt", "pt", "ro", "ru", "sk", "sq", "sr", "sv", "sw",
+// "tr", "vi", "zh", "zh-yue", "hi", "el", "ta"
 //
-// speed: speed in words per minute; from "80" to "390"
+// Speed: speed in words per minute; values: from "80" to "390"
 //
-// gender: gender of the speaker; "m" for male, and "f" for female. note: not all voices support different genders
+// Gender: gender of the speaker; values: "m" for male, and "f" for female. note: not all voices support different genders
 //
-// altvoice: alternative voice; from "0" to "5"
+// Altvoice: alternative voice; values: from "0" to "5"
 //
-// quality: quality of the output MP3/OGG audio; "high", "medium" or "low"
+// Quality: quality of the output MP3/OGG audio; values: "high", "medium" or "low"
 //
-// pitch: pitch adjustment; from "0" to "99"
+// Pitch: pitch adjustment; values: from "0" to "99"
 type EspeakSpeech struct {
 	Text     string
 	Lang     string
