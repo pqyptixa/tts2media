@@ -51,7 +51,7 @@ func TestPreload(t *testing.T) {
 // and that the file can be removed by media.RemoveWAV()
 func TestEspeak(t *testing.T) {
 	espwav := &EspeakSpeech{"This is some sample text for testing text to speech engines.",
-		"en", "135", "m", "0", "good", "50"}
+		"en", "135", "m", "0", "high", "50"}
 
 	media, err := espwav.NewEspeakSpeech()
 	if err != nil {
@@ -80,7 +80,7 @@ func TestEspeak(t *testing.T) {
 // This function also tests media.ImageToVideo() and sets the filename for other tests
 func TestEspeakToAudio(t *testing.T) {
 	espwav := &EspeakSpeech{"This is some sample text for testing text to speech engines.",
-		"en", "135", "m", "0", "normal", "50"}
+		"en", "135", "m", "0", "medium", "50"}
 	media, err := espwav.NewEspeakSpeech()
 	if err != nil {
 		t.Fatal("NewEspeakSpeech returned error:", err)
@@ -136,7 +136,7 @@ func TestEspeakToAudio(t *testing.T) {
 // and that the file can be removed by media.RemoveWAV()
 func TestPicoTTS(t *testing.T) {
 	picowav := &PicoTTSSpeech{"This is some sample text for testing text to speech engines.",
-		"en-US", "normal"}
+		"en-US", "medium"}
 	media, err := picowav.NewPicoTTSSpeech()
 	if err != nil {
 		t.Fatal("NewPicoTTSSpeech returned error:", err)
@@ -169,7 +169,7 @@ func TestPicoTTSToAudio(t *testing.T) {
 		"some sample text for testing text to speech engines. This is some sample text " +
 		"for testing text to speech engines. This is some sample text for testing text to" +
 		" speech engines. This is some sample text for testing text to speech engines. " +
-		"This is some sample text for testing text to speech engines.", "en-US", "bad"}
+		"This is some sample text for testing text to speech engines.", "en-US", "low"}
 
 	media, err := picowav.NewPicoTTSSpeech()
 	if err != nil {

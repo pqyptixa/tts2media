@@ -19,7 +19,7 @@ in the current working directory.
 		Speed:    "135",		// speed
 		Gender:   "m",			// gender
 		Altvoice: "0",			// alternative voice
-		Quality:  "good",		// quality of output mp3/ogg audio
+		Quality:  "high",		// quality of output mp3/ogg audio
 		Pitch:    "50",			// pitch
 	}
 
@@ -116,25 +116,19 @@ func SetDataDir(dataDir string) {
 	tempPath = dataPath + "tmp/"
 }
 
-type Param struct {
-	Name   string
-	Limits []int
-}
-
 var (
-	quality = map[string][]string{
-		"bad":    []string{"16k", "8000"},
-		"good":   []string{"32k", "22050"},
-		"normal": []string{"24k", "16000"},
+	audioQuality = map[string][]string{
+		// quality  ->  bitrate and sample rate passed to ffmpeg
+		"low":    []string{"16k", "8000"},
+		"high":   []string{"32k", "22050"},
+		"medium": []string{"24k", "16000"},
 	}
 
-	arrParams = []Param{
-		{"speed", []int{80, 390}},
-		{"altvoice", []int{0, 5}},
-		{"pitch", []int{0, 99}},
-	}
-
-	langs = []string{
+	espeakLangs = []string{
+		// languages spoken by espeak, passed through the "-v" flag
+		// to get a list, run: espeak --voices. note: mbrola voices are not listed here,
+		// and, for some reason, they won't appear in the list shown by espeak.
+		// these voices should be in the voices/mb/ directory in the espeak package.
 		"af", "bs", "ca", "cs", "cy", "de", "en", "en-sc", "en-uk", "en-uk-north",
 		"en-uk-rp", "en-uk-wmids", "en-us", "en-wi", "eo", "es", "es-la", "fi", "fr",
 		"fr-be", "grc", "hr", "hu", "id", "is", "it", "jbo", "ku", "la", "lv", "mk", "nl",
@@ -142,37 +136,58 @@ var (
 		"zh", "zh-yue", "hi", "el", "ta",
 	}
 
-	genders = []string{"m", "f"}
+	// genders accepted by espeak, passed through the "-v" flag
+	espeakGenders = []string{"m", "f"}
 )
+
+// to be used for bounds checking against integer arguments
+type espeakArg struct {
+	Name   string
+	Limits []int
+}
+
+var espeakArgs = []espeakArg{
+	// to be used for bounds checking against integer arguments
+	// name of argument -> {min, max}
+	{"speed", []int{80, 390}},
+	{"altvoice", []int{0, 5}},
+	{"pitch", []int{0, 99}},
+}
 
 // NewEspeakSpeech creates (after validating inputs) a WAV file with a random filename
 // If the operation succeeds, it returns the filename (without path or extension)
 // and a nil error. Otherwise, returns an empty string and an error
 func (s *EspeakSpeech) NewEspeakSpeech() (*Media, error) {
-
-	intParams := map[string]Param{
-		s.Speed:    arrParams[0],
-		s.Altvoice: arrParams[1],
-		s.Pitch:    arrParams[2],
+	// this map is made only to be used in the next loop, to shorten code
+	integerEspeakArgs := map[string]espeakArg{
+		s.Speed:    espeakArgs[0],
+		s.Altvoice: espeakArgs[1],
+		s.Pitch:    espeakArgs[2],
 	}
 
-	for input, params := range intParams {
-		if param, err := strconv.Atoi(input); err != nil || param < params.Limits[0] ||
-			param > params.Limits[1] {
-			return nil, errors.New("error converting " + params.Name)
+	// the idea here is: for every argument that is to be passed to espeak as integer type,
+	// check that the string we received can be converted to int, and that this integer is
+	// inside bounds. otherwise, return a non-nil error.
+	for input, args := range integerEspeakArgs {
+		if arg, err := strconv.Atoi(input); err != nil || arg < args.Limits[0] ||
+			arg > args.Limits[1] {
+			return nil, errors.New("error converting " + args.Name)
 		}
 	}
 
-	if !stringInSlice(&(s.Gender), genders) {
+	// validate gender
+	if !stringInSlice(&(s.Gender), espeakGenders) {
 		return nil, errors.New("error converting gender")
 	}
 
-	if !stringInSlice(&(s.Lang), langs) {
+	// validate language
+	if !stringInSlice(&(s.Lang), espeakLangs) {
 		return nil, errors.New("error converting lang")
 	}
 
+	// validate quality, set bitrate and sample rate
 	var bitRate, sampleRate string
-	if val, ok := quality[s.Quality]; ok {
+	if val, ok := audioQuality[s.Quality]; ok {
 		bitRate = val[0]
 		sampleRate = val[1]
 	} else {
@@ -203,19 +218,21 @@ func (s *EspeakSpeech) NewEspeakSpeech() (*Media, error) {
 	return media, nil
 }
 
+var picoTTSLangs = []string{"de-DE", "en-GB", "en-US", "es-ES", "fr-FR", "it-IT"}
+
 // NewPicoTTSSpeech creates (after validating inputs) a WAV file with a random filename.
 // If the operation succeeds, it returns the filename (without path or extension) and
 // a nil error. Otherwise, returns an empty string and an error
 func (s *PicoTTSSpeech) NewPicoTTSSpeech() (*Media, error) {
 
-	langs := []string{"de-DE", "en-GB", "en-US", "es-ES", "fr-FR", "it-IT"}
-
-	if !stringInSlice(&(s.Lang), langs) {
+	// validate language
+	if !stringInSlice(&(s.Lang), picoTTSLangs) {
 		return nil, errors.New("error converting pitch")
 	}
 
+	// validate quality, set bitrate and sample rate
 	var bitRate, sampleRate string
-	if val, ok := quality[s.Quality]; ok {
+	if val, ok := audioQuality[s.Quality]; ok {
 		bitRate = val[0]
 		sampleRate = val[1]
 	} else {
@@ -330,7 +347,7 @@ func (m *Media) ImageToVideo(imageExtension string) (string, error) {
 }
 
 // FromVideo creates videos from inputs video and Ogg audio files (previously generated by ToAudio).
-// The last parameter indicates the length, in seconds, of the output file: if AsVideo is true,
+// The last argument indicates the length, in seconds, of the output file: if AsVideo is true,
 // the length of the output file, in seconds, is the same as the input video.
 // Otherwise, it is the same as the input audio.
 // The output videos are stored with the same format (plus corresponding extensions) as input files.
@@ -377,8 +394,8 @@ func FromVideo(Audio string, AsVideo bool) (string, error) {
 
 	// https://stackoverflow.com/questions/13041061/
 	// https://stackoverflow.com/questions/12938581/12943003#12943003
-	switch {
-	case mime == "video/mp4":
+	switch mime {
+	case "video/mp4":
 		if AsVideo {
 			commandArgs = []string{"-y", "-t", duration, "-i", input, "-i",
 				inAudio + ".ogg", "-c:v", "copy", "-c:a", "aac", "-strict",
@@ -389,7 +406,7 @@ func FromVideo(Audio string, AsVideo bool) (string, error) {
 				"-c:v", "copy", "-c:a", "aac", "-strict", "experimental", "-map",
 				"0:0", "-map", "1:0", "-f", "mp4", "-t", duration, outpath + ".mp4"}
 		}
-	case mime == "video/webm":
+	case "video/webm":
 		if AsVideo {
 			commandArgs = []string{"-y", "-t", duration, "-i", input, "-i",
 				inAudio + ".ogg", "-c:v", "copy", "-c:a", "copy", "-map", "0:0",
