@@ -192,12 +192,12 @@ func (s *EspeakSpeech) NewEspeakSpeech() (*Media, error) {
 	}
 
 	// validate gender
-	if !stringInSlice(&(s.Gender), espeakGenders) {
+	if !stringInSlice(s.Gender, espeakGenders) {
 		return nil, errors.New("error converting gender")
 	}
 
 	// validate language
-	if !stringInSlice(&(s.Lang), espeakLangs) {
+	if !stringInSlice(s.Lang, espeakLangs) {
 		return nil, errors.New("error converting lang")
 	}
 
@@ -242,7 +242,7 @@ var picoTTSLangs = []string{"de-DE", "en-GB", "en-US", "es-ES", "fr-FR", "it-IT"
 func (s *PicoTTSSpeech) NewPicoTTSSpeech() (*Media, error) {
 
 	// validate language
-	if !stringInSlice(&(s.Lang), picoTTSLangs) {
+	if !stringInSlice(s.Lang, picoTTSLangs) {
 		return nil, errors.New("error converting pitch")
 	}
 
@@ -597,9 +597,9 @@ func randString(n int) string {
 	return string(b)
 }
 
-func stringInSlice(a *string, list []string) bool {
+func stringInSlice(a string, list []string) bool {
 	for _, b := range list {
-		if b == *a {
+		if b == a {
 			return true
 		}
 	}
