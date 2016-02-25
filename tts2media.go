@@ -42,7 +42,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"log"
+	// "log"
 	"math/rand"
 	"net/http"
 	"os"
@@ -105,7 +105,7 @@ func init() {
 	for _, exe := range exes {
 		_, err := exec.LookPath(exe)
 		if err != nil {
-			log.Fatal("the '" + exe + "' binary executable was not found")
+			panic("the '" + exe + "' binary executable was not found")
 		}
 	}
 }
@@ -145,15 +145,15 @@ var (
 	genders = []string{"m", "f"}
 )
 
-// NewEspeakSpeech creates (after sanitizing inputs) a WAV file with a random filename
+// NewEspeakSpeech creates (after validating inputs) a WAV file with a random filename
 // If the operation succeeds, it returns the filename (without path or extension)
 // and a nil error. Otherwise, returns an empty string and an error
 func (s *EspeakSpeech) NewEspeakSpeech() (*Media, error) {
 
 	intParams := map[string]Param{
-		s.Speed:    arrParams[0], // speed
-		s.Altvoice: arrParams[1], // altvoice
-		s.Pitch:    arrParams[2], // pitch
+		s.Speed:    arrParams[0],
+		s.Altvoice: arrParams[1],
+		s.Pitch:    arrParams[2],
 	}
 
 	for input, params := range intParams {
@@ -203,7 +203,7 @@ func (s *EspeakSpeech) NewEspeakSpeech() (*Media, error) {
 	return media, nil
 }
 
-// NewPicoTTSSpeech creates (after sanitizing inputs) a WAV file with a random filename.
+// NewPicoTTSSpeech creates (after validating inputs) a WAV file with a random filename.
 // If the operation succeeds, it returns the filename (without path or extension) and
 // a nil error. Otherwise, returns an empty string and an error
 func (s *PicoTTSSpeech) NewPicoTTSSpeech() (*Media, error) {
